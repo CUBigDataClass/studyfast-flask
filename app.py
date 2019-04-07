@@ -6,7 +6,6 @@ from apiclient.discovery import build
 from dotenv import load_dotenv
 import os
 
-
 app = Flask(__name__)
 api = Api(app)
 
@@ -21,6 +20,8 @@ API_VERSION = os.getenv("API_VERSION")
 API_KEY = os.getenv("API_KEY")
 
 
+
+
 @app.route('/', methods=['GET'])
 def home():
 	rV = {"home": "test"}
@@ -30,21 +31,16 @@ def home():
 @app.route('/api/v1/search', methods=['GET'])
 def search():
 
+	query = "khan academy"
+
 	title = []
 	youtube = build(API_SERVICE_NAME, API_VERSION,developerKey=API_KEY)
 
-	request = youtube.search().list(q = "hello", type = "video", part = "id, snippet")
+	request = youtube.search().list(q = query, type = "video", part = "snippet")
 
 
 	response = request.execute()
-
 	return jsonify(response)
-
-
-	# r = api.get('search', q="hello")
-	# return jsonify(r)
-	# resp = youtube.search().list(q="hello")
-	# return jsonify(resp)
 
 
 if __name__ == '__main__':
