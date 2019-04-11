@@ -5,6 +5,7 @@ from youtube import API
 from apiclient.discovery import build 
 from dotenv import load_dotenv
 import os
+import requests
 
 app = Flask(__name__)
 api = Api(app)
@@ -42,8 +43,16 @@ def search():
 	response = request.execute()
 	return jsonify(response)
 
+@app.route('/api/v1/ml', methods=['GET'])
+def getmldata():
+	line = "https://modeler.studyfast.xyz"
+	
+	temp = requests.get(line).json()
+
+	return temp
+
 
 if __name__ == '__main__':
-    app.run(debug=True, port=65010)
+    app.run(debug=True, port=65010, host="0.0.0.0")
 
 
