@@ -31,16 +31,16 @@ def home():
 
 @app.route('/api/v1/search', methods=['GET'])
 def search():
-
-	query = "academy"
+	query = request.args.get('search')
+	#query = "academy"
 
 	title = []
 	youtube = build(API_SERVICE_NAME, API_VERSION,developerKey=API_KEY)
 
-	request = youtube.search().list(q = query, type = "video", part = "snippet", maxResults=40)
+	req = youtube.search().list(q = query, type = "video", part = "snippet", maxResults=40)
 
 
-	response = request.execute()
+	response = req.execute()
 	videos = []
 	items = response.get("items")
 	for i in items:
