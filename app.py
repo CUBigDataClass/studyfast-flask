@@ -32,16 +32,27 @@ def home():
 @app.route('/api/v1/search', methods=['GET'])
 def search():
 
-	query = "khan academy"
+	query = "academy"
 
 	title = []
 	youtube = build(API_SERVICE_NAME, API_VERSION,developerKey=API_KEY)
 
-	request = youtube.search().list(q = query, type = "video", part = "snippet")
+	request = youtube.search().list(q = query, type = "video", part = "snippet", maxResults=40)
 
 
 	response = request.execute()
-	return jsonify(response)
+	videos = []
+	items = response.get("items")
+	for i in items:
+		idval = i["id"]["videoId"]
+		ml_result = ml_helper(idval, query)
+		print(ml_result)
+		if not ml_result.get("error"):
+			i["topics"] = ml_result
+			videos.append(i)
+			
+
+	return jsonify(videos)
 
 @app.route('/api/v1/ml', methods=['GET'])
 def getmldata():
@@ -50,6 +61,14 @@ def getmldata():
 	temp = requests.get(line).json()
 
 	return temp
+
+def ml_helper(vidid, search):
+	base_url = "https://ml-service.studyfast.xyz/video/"
+	request_url = base_url + vidid
+	payload = {'search':search}
+	response = requests.get(request_url, params=payload)
+	return response.json()
+
 
 
 if __name__ == '__main__':
