@@ -26,8 +26,10 @@ API_KEY = os.getenv("API_KEY")
 @app.route('/', methods=['GET'])
 def home():
 	rV = {"home": "test"}
-	rV.headers['Access-Control-Allow-Origin'] = '*'
-	return jsonify(rV)
+	resp = jsonify(rV)
+	resp.headers['Access-Control-Allow-Origin'] = '*'
+	#return jsonify(rV)
+	return resp
 
 
 @app.route('/api/v1/search', methods=['GET'])
@@ -53,7 +55,9 @@ def search():
 			videos.append(i)
 			
 
-	return jsonify(videos)
+	resp = jsonify(videos)
+	resp.headers['Access-Control-Allow-Origin'] = '*'
+	return resp
 
 @app.route('/api/v1/ml', methods=['GET'])
 def getmldata():
