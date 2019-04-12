@@ -26,6 +26,7 @@ API_KEY = os.getenv("API_KEY")
 @app.route('/', methods=['GET'])
 def home():
 	rV = {"home": "test"}
+	rV.headers['Access-Control-Allow-Origin'] = '*'
 	return jsonify(rV)
 
 
