@@ -51,7 +51,7 @@ def search():
 	network_calls = [ml_helper(i["id"]["videoId"], query) for i in items]
 	async def get_video_results():
 		return await asyncio.gather(*network_calls)
-	mlresults = asyncio.run_until_complete(get_video_results())
+	mlresults = asyncio.run(get_video_results())
 	print(mlresults)
 	for i in range(0, len(items)):
 		item = items[i]
