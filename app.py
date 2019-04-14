@@ -6,6 +6,7 @@ from apiclient.discovery import build
 from dotenv import load_dotenv
 import os
 import requests
+import asyncio
 
 app = Flask(__name__)
 api = Api(app)
@@ -20,8 +21,8 @@ API_SERVICE_NAME = os.getenv("API_SERVICE_NAME")
 API_VERSION = os.getenv("API_VERSION")
 API_KEY = os.getenv("API_KEY")
 
-
-
+loop = asyncio.new_event_loop()
+asyncio.set_event_loop(loop)
 
 @app.route('/', methods=['GET'])
 def home():
@@ -38,21 +39,28 @@ def search():
 	#query = "academy"
 
 	title = []
-	youtube = build(API_SERVICE_NAME, API_VERSION,developerKey=API_KEY)
+	youtube = build(API_SERVICE_NAME, API_VERSION, developerKey=API_KEY)
 
 	req = youtube.search().list(q = query, type = "video", part = "snippet", maxResults=40)
-
-
 	response = req.execute()
+
 	videos = []
 	items = response.get("items")
-	for i in items:
-		idval = i["id"]["videoId"]
-		ml_result = ml_helper(idval, query)
+	loop = asyncio.new_event_loop()
+	asyncio.set_event_loop(loop)
+	network_calls = [ml_helper(i["id"]["videoId"], query) for i in items]
+	async def get_video_results():
+		return await asyncio.gather(*network_calls)
+	mlresults = asyncio.run(get_video_results())
+	print(mlresults)
+	for i in range(0, len(items)):
+		item = items[i]
+		idval = item["id"]["videoId"]
+		ml_result = mlresults[i]
 		print(ml_result)
 		if not ml_result.get("error"):
-			i["topics"] = ml_result
-			videos.append(i)
+			item["topics"] = ml_result
+			videos.append(item)
 			
 
 	resp = jsonify(videos)
@@ -67,11 +75,12 @@ def getmldata():
 
 	return temp
 
-def ml_helper(vidid, search):
+async def ml_helper(vidid, search):
 	base_url = "https://ml-service.studyfast.xyz/video/"
 	request_url = base_url + vidid
 	payload = {'search':search}
 	response = requests.get(request_url, params=payload)
+	print(request_url)
 	return response.json()
 
 
