@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import os
 import requests
 import asyncio
+from requests_futures.sessions import FuturesSession
 
 app = Flask(__name__)
 api = Api(app)
@@ -26,62 +27,65 @@ asyncio.set_event_loop(loop)
 
 @app.route('/', methods=['GET'])
 def home():
-	rV = {"home": "test"}
-	resp = jsonify(rV)
-	resp.headers['Access-Control-Allow-Origin'] = '*'
-	#return jsonify(rV)
-	return resp
+    rV = {"home": "test"}
+    resp = jsonify(rV)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    #return jsonify(rV)
+    return resp
 
 
 @app.route('/api/v1/search', methods=['GET'])
 def search():
-	query = request.args.get('search')
-	#query = "academy"
+    query = request.args.get('search')
+    #query = "academy"
 
-	title = []
-	youtube = build(API_SERVICE_NAME, API_VERSION, developerKey=API_KEY)
+    title = []
+    youtube = build(API_SERVICE_NAME, API_VERSION, developerKey=API_KEY)
 
-	req = youtube.search().list(q = query, type = "video", part = "snippet", maxResults=40)
-	response = req.execute()
+    req = youtube.search().list(q = query, type = "video", part = "snippet", maxResults=40)
+    response = req.execute()
 
-	videos = []
-	items = response.get("items")
-	loop = asyncio.new_event_loop()
-	asyncio.set_event_loop(loop)
-	network_calls = [ml_helper(i["id"]["videoId"], query) for i in items]
-	async def get_video_results():
-		return await asyncio.gather(*network_calls)
-	mlresults = asyncio.run(get_video_results())
-	print(mlresults)
-	for i in range(0, len(items)):
-		item = items[i]
-		idval = item["id"]["videoId"]
-		ml_result = mlresults[i]
-		print(ml_result)
-		if not ml_result.get("error"):
-			item["topics"] = ml_result
-			videos.append(item)
-			
+    # Get all of the results in parallel
+    items = response.get("items")
+    payload = {'search':search}
+    req_urls = ["https://ml-service.studyfast.xyz/video/" + i["id"]["videoId"] for i in items]
+    session = FuturesSession()
+    network_calls = [session.get(u, params=payload) for u in req_urls]
+    raw_results = [req.result() for req in network_calls]
+    results = [r.json() for r in raw_results]
 
-	resp = jsonify(videos)
-	resp.headers['Access-Control-Allow-Origin'] = '*'
-	return resp
+    # Get the final list of videos
+    videos = []
+    for i in range(0, len(items)):
+        item = items[i]
+        idval = item["id"]["videoId"]
+        ml_result = results[i]
+        print(ml_result)
+        if not ml_result.get("error"):
+            item["topics"] = ml_result
+            videos.append(item)
+            
+
+    resp = jsonify(videos)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    return resp
 
 @app.route('/api/v1/ml', methods=['GET'])
 def getmldata():
-	line = "https://modeler.studyfast.xyz"
-	
-	temp = requests.get(line).json()
+    line = "https://modeler.studyfast.xyz"
+    
+    temp = requests.get(line).json()
 
-	return temp
+    return temp
 
 async def ml_helper(vidid, search):
-	base_url = "https://ml-service.studyfast.xyz/video/"
-	request_url = base_url + vidid
-	payload = {'search':search}
-	response = requests.get(request_url, params=payload)
-	print(request_url)
-	return response.json()
+    base_url = "https://ml-service.studyfast.xyz/video/"
+    request_url = base_url + vidid
+    payload = {'search':search}
+    print(request_url)
+    response = requests.get(request_url, params=payload)
+    print("Done! " + request_url)
+    return response.json()
 
 
 
