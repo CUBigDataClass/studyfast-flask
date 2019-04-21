@@ -37,7 +37,6 @@ def home():
 @app.route('/api/v1/search', methods=['GET'])
 def search():
     query = request.args.get('search')
-    #query = "academy"
 
     title = []
     youtube = build(API_SERVICE_NAME, API_VERSION, developerKey=API_KEY)
@@ -77,16 +76,6 @@ def getmldata():
     temp = requests.get(line).json()
 
     return temp
-
-async def ml_helper(vidid, search):
-    base_url = "https://ml-service.studyfast.xyz/video/"
-    request_url = base_url + vidid
-    payload = {'search':search}
-    print(request_url)
-    response = requests.get(request_url, params=payload)
-    print("Done! " + request_url)
-    return response.json()
-
 
 
 if __name__ == '__main__':
