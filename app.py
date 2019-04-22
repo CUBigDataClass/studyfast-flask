@@ -33,6 +33,7 @@ def home():
     #return jsonify(rV)
     return resp
 
+
 @app.route('/api/v1/list', methods=['GET'])
 def search():
     query = request.args.get('search')
@@ -60,6 +61,7 @@ def search():
         ml_result = results[i]
         if not ml_result.get("error"):
             item["topics"] = ml_result
+            item = clean_youtube_search_result(item)
             videos.append(item)
             
 
@@ -75,6 +77,15 @@ def getmldata():
     temp = requests.get(line).json()
 
     return temp
+
+
+def clean_youtube_search_result(result):
+    result.pop('etag')
+    result.pop('kind')
+    result.get('snippet').pop('channelId')
+    result.get('snippet').pop('publishedAt')
+    result.get('snippet').pop('liveBroadcastContent')
+    return result
 
 
 if __name__ == '__main__':
