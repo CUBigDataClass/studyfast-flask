@@ -25,16 +25,15 @@ API_KEY = os.getenv("API_KEY")
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
 
-@app.route('/', methods=['GET'])
+@app.route('/ping', methods=['GET'])
 def home():
-    rV = {"home": "test"}
+    rV = {"pong": True}
     resp = jsonify(rV)
     resp.headers['Access-Control-Allow-Origin'] = '*'
     #return jsonify(rV)
     return resp
 
-
-@app.route('/api/v1/search', methods=['GET'])
+@app.route('/api/v1/list', methods=['GET'])
 def search():
     query = request.args.get('search')
 
@@ -59,7 +58,6 @@ def search():
         item = items[i]
         idval = item["id"]["videoId"]
         ml_result = results[i]
-        print(ml_result)
         if not ml_result.get("error"):
             item["topics"] = ml_result
             videos.append(item)
@@ -69,41 +67,6 @@ def search():
     resp.headers['Access-Control-Allow-Origin'] = '*'
     return resp
 
-
-@app.route('/api/v1/list', methods=['GET'])
-def list_videos():
-    query = request.args.get('search')
-
-    title = []
-    youtube = build(API_SERVICE_NAME, API_VERSION, developerKey=API_KEY)
-
-    req = youtube.search().list(q = query, type = "video", part = "snippet", maxResults=40)
-    response = req.execute()
-
-    # Get all of the results in parallel
-    items = response.get("items")
-    payload = {'search':search}
-    req_urls = ["https://www.youtube.com/api/timedtext?lang=en&v=" + i["id"]["videoId"] for i in items]
-    session = FuturesSession()
-    network_calls = [session.get(u, params=payload) for u in req_urls]
-    raw_results = [req.result() for req in network_calls]
-    results = [r.content for r in raw_results]
-    print(results)
-    print(len(results))
-
-    # Get the final list of videos
-    videos = []
-    for i in range(0, len(items)):
-        item = items[i]
-        idval = item["id"]["videoId"]
-        result = results[i]
-        if len(result) > 0:
-            videos.append(item)
-            
-
-    resp = jsonify(videos)
-    resp.headers['Access-Control-Allow-Origin'] = '*'
-    return resp
 
 @app.route('/api/v1/ml', methods=['GET'])
 def getmldata():
