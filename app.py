@@ -70,15 +70,6 @@ def search():
     return resp
 
 
-@app.route('/api/v1/ml', methods=['GET'])
-def getmldata():
-    line = "https://modeler.studyfast.xyz"
-    
-    temp = requests.get(line).json()
-
-    return temp
-
-
 def clean_youtube_search_result(result):
     result.pop('etag')
     result.pop('kind')
