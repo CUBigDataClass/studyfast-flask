@@ -21,6 +21,9 @@ CLIENT_SEC = os.getenv("CLIENT_SEC")
 API_SERVICE_NAME = os.getenv("API_SERVICE_NAME")
 API_VERSION = os.getenv("API_VERSION")
 API_KEY = os.getenv("API_KEY")
+youtube = build(API_SERVICE_NAME, API_VERSION, developerKey=API_KEY)
+
+ML_BASE_URL = 'https://ml-service.studyfast.xyz/video/'
 
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
@@ -34,12 +37,24 @@ def home():
     return resp
 
 
+@app.route('/api/v1/video/<video_id>', methods=['GET'])
+def get_video(video_id):
+    query = request.args.get('search')
+    # Get the ml result
+    ml_url = ML_BASE_URL + video_id
+    ml_response = requests.get(ml_url, params={'search': query}).json()
+    # Get video details from youtube
+    req = youtube.videos().list(id=video_id, part='snippet')
+    response = req.execute()
+    response['topics'] = ml_response
+    return jsonify(response)
+
+
 @app.route('/api/v1/list', methods=['GET'])
 def search():
     query = request.args.get('search')
 
     title = []
-    youtube = build(API_SERVICE_NAME, API_VERSION, developerKey=API_KEY)
 
     req = youtube.search().list(q = query, type = "video", part = "snippet", maxResults=40)
     response = req.execute()
@@ -47,7 +62,7 @@ def search():
     # Get all of the results in parallel
     items = response.get("items")
     payload = {'search':search}
-    req_urls = ["https://ml-service.studyfast.xyz/video/" + i["id"]["videoId"] for i in items]
+    req_urls = [ML_BASE_URL + i["id"]["videoId"] for i in items]
     session = FuturesSession()
     network_calls = [session.get(u, params=payload) for u in req_urls]
     raw_results = [req.result() for req in network_calls]
