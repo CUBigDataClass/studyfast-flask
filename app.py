@@ -14,7 +14,7 @@ api = Api(app)
 
 APP_ROOT = os.path.join(os.path.dirname(__file__), '..')   # refers to application_top
 dotenv_path = os.path.join(APP_ROOT, '.env')
-load_dotenv(dotenv_path)
+load_dotenv('.env')
 
 CLIENT_ID = os.getenv('CLIENT_ID')
 CLIENT_SEC = os.getenv("CLIENT_SEC")
@@ -22,8 +22,6 @@ API_SERVICE_NAME = os.getenv("API_SERVICE_NAME")
 API_VERSION = os.getenv("API_VERSION")
 API_KEY = os.getenv("API_KEY")
 youtube = build(API_SERVICE_NAME, API_VERSION, developerKey=API_KEY)
-
-ML_BASE_URL = 'https://ml-service.studyfast.xyz/video/'
 
 loop = asyncio.new_event_loop()
 asyncio.set_event_loop(loop)
@@ -41,7 +39,7 @@ def home():
 def get_video(video_id):
     query = request.args.get('search')
     # Get the ml result
-    ml_url = ML_BASE_URL + video_id
+    ml_url = 'https://ml-service.studyfast.xyz/video/' + video_id
     ml_response = requests.get(ml_url, params={'search': query}).json()
     # Get video details from youtube
     req = youtube.videos().list(id=video_id, part='snippet')
@@ -62,7 +60,7 @@ def search():
     # Get all of the results in parallel
     items = response.get("items")
     payload = {'search':search}
-    req_urls = [ML_BASE_URL + i["id"]["videoId"] for i in items]
+    req_urls = ['https://ml-service.studyfast.xyz/valid_transcript/' + i["id"]["videoId"] for i in items]
     session = FuturesSession()
     network_calls = [session.get(u, params=payload) for u in req_urls]
     raw_results = [req.result() for req in network_calls]
@@ -72,10 +70,8 @@ def search():
     videos = []
     for i in range(0, len(items)):
         item = items[i]
-        idval = item["id"]["videoId"]
-        ml_result = results[i]
-        if not ml_result.get("error"):
-            item["topics"] = ml_result
+        has_transcript = results[i]['transcript']
+        if has_transcript:
             item = clean_youtube_search_result(item)
             videos.append(item)
             
