@@ -45,7 +45,9 @@ def get_video(video_id):
     req = youtube.videos().list(id=video_id, part='snippet')
     response = req.execute()
     response['topics'] = ml_response
-    return jsonify(response)
+    resp = jsonify(response)
+    resp.headers['Access-Control-Allow-Origin'] = '*'
+    return resp
 
 
 @app.route('/api/v1/list', methods=['GET'])
